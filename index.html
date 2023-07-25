@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Time dilation calculator</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: Inter,sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <noscript><h1>You can't fly through space at high speeds without JavaScript enabled.</h1></noscript>
+  <form>
+    <fieldset>
+      <legend>Time dilation calculator</legend>
+      <dl>
+        <dt><label for="spaceship_time">Time spent traveling:</label></dt>
+        <dd><input type="number" id="spaceship_time" name="spaceship_time" step=".01" value="43"></dd>
+        <dt><label for="spaceship_time_unit">Unit of time:</label></dt>
+        <dd><select id="spaceship_time_unit" name="spaceship_time_unit">
+          <option value="Hours">Hours</option>
+          <option value="Days" selected>Days</option>
+          <option value="Months">Months (simplified as 30 days)</option>
+          <option value="Years">Years</option>
+        </select></dd>
+        <dt><label for="spaceship_speed">Percentage of the speed of light the spacecraft traveled:</label></dt>
+        <dd><input type="number" id="spaceship_speed" name="spaceship_speed" min="0" max="100" step=".0000000001" value="37"></dd>
+      </dl>
+      <menu>
+        <button type="submit" name="submit">Calculate</button>
+      </menu>
+      <output></output>
+    </fieldset>
+  </form>
+  <script>
+    const form = document.querySelector('form')
+    form.addEventListener('submit', function (e) {
+      e.preventDefault()
+      const spaceShipTime = parseInt(document.getElementById('spaceship_time').value)
+      const percentLightSpeed = parseFloat(document.getElementById('spaceship_speed').value) / 100
+      const t = (spaceShipTime / Math.sqrt(1 - Math.pow(percentLightSpeed, 2))).toLocaleString('en-US')
+      const mps = ((299792458 * percentLightSpeed) / 1000) // speed of light is 299792458 meters per second
+      const mph = (mps * 60)
+      const mpd = (mph * 24)
+      const aupd = mpd / 149597870.7 // meters per day / number of km in an au
+      let days = spaceShipTime
+      let daysUnit = document.getElementById('spaceship_time_unit').value
+      switch (daysUnit) {
+        case 'Hours':
+          days /= 24
+          break
+        case 'Months':
+          days *= 30
+          break
+        case 'Years':
+          days *= 365
+          break
+      }
+      document.querySelector('output').innerHTML = `
+        <p><strong>${document.getElementById('spaceship_time_unit').value} elapsed on Earth: ${t}</strong></p>
+        <p>Spacecraft speed:</p>
+        <ul>
+          <li>${mps.toLocaleString('en-US')} km/second</li>
+          <li>${mph.toLocaleString('en-US')} km/hour</li>
+          <li>${mpd.toLocaleString('en-US')} km/day</li>
+          <li>${aupd.toLocaleString('en-US')} AU/day (astronomical units per day)</li>
+        </ul>
+        <p>Distance traveled: ${(days * aupd).toLocaleString('en-US')} AU</p>`
+    })
+  </script>
+  <p><a href="https://github.com/kethinov/time-dilation-calculator">Source code on GitHub</a>.</p>
+</body>
+</html>
