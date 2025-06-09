@@ -5,39 +5,47 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Time dilation calculator</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/water.css@2/out/water.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-forms@latest/dist/semantic-forms.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/semantic-forms@latest/dist/semantic-forms.js" defer></script>
   <style>
     body {
-      font-family: Inter,sans-serif;
+      font-family: Inter, sans-serif;
+    }
+    form {
+      max-width: 480px;
     }
   </style>
 </head>
 <body>
   <noscript><h1>You can't fly through space at high speeds without JavaScript enabled.</h1></noscript>
-  <form>
+  <form class="semanticForms">
     <fieldset>
       <legend>Time dilation calculator</legend>
-      <dl>
-        <dt><label for="spaceship_time">Time spent traveling:</label></dt>
-        <dd><input type="number" id="spaceship_time" name="spaceship_time" step=".01" value="43"></dd>
-        <dt><label for="spaceship_time_unit">Unit of time:</label></dt>
+      <dl class="colspan-1">
+        <dt><label for="spaceship_time">Time spent traveling</label></dt>
+        <dd><input type="number" id="spaceship_time" name="spaceship_time" step=".01" value="43" placeholder="e.g. 43"></dd>
+        <dt><label for="spaceship_time_unit">Unit of time</label></dt>
         <dd><select id="spaceship_time_unit" name="spaceship_time_unit">
           <option value="Hours">Hours</option>
           <option value="Days" selected>Days</option>
           <option value="Months">Months (simplified as 30 days)</option>
           <option value="Years">Years</option>
         </select></dd>
-        <dt><label for="spaceship_speed">Percentage of the speed of light the spacecraft traveled:</label></dt>
-        <dd><input type="number" id="spaceship_speed" name="spaceship_speed" min="0" max="100" step=".0000000001" value="37"></dd>
+        <dt><label for="spaceship_speed">% light speed</label></dt>
+        <dd><input type="number" id="spaceship_speed" name="spaceship_speed" min="0" max="100" step=".0000000001" value="37" placeholder="e.g. 37">
+        <label for="spaceship_speed">Percentage of the speed of light the spacecraft traveled.</label></dd>
       </dl>
       <menu>
-        <button type="submit" name="submit">Calculate</button>
+        <li><button type="submit" name="submit">Calculate</button></li>
       </menu>
       <output></output>
     </fieldset>
   </form>
   <script>
+    window.addEventListener('load', () => {
+      window.semanticForms()
+    })
     const form = document.querySelector('form')
     form.addEventListener('submit', function (e) {
       e.preventDefault()
