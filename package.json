@@ -1,0 +1,12 @@
+{
+  "name": "time-dilation-calculator",
+  "version": "1.0.0",
+  "description": "Calculate how much extra time passes on Earth if you fly a spaceship at relativistic speeds.",
+  "author": "Eric Newport <kethinov@gmail.com>",
+  "repository": "github:kethinov/time-dilation-calculator",
+  "homepage": "https://kethinov.github.io/time-dilation-calculator/",
+  "files": [
+    "index.html",
+    "calculator.js"
+  ]
+}
