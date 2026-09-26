@@ -5,9 +5,9 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Time dilation calculator</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-forms@latest/dist/semantic-forms.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/semantic-forms@5.3.8/dist/semantic-forms.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/semantic-forms@latest/dist/semantic-forms.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/semantic-forms@5.3.8/dist/semantic-forms.js" defer></script>
   <style>
     body {
       font-family: Inter, sans-serif;
@@ -19,6 +19,9 @@
       --semanticFormsInputFontSize: 15px;
       --semanticFormsFontFamily: Inter, sans-serif;
     }
+    form.semanticForms .hiddenField {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -27,18 +30,38 @@
     <fieldset>
       <legend>Time dilation calculator</legend>
       <dl class="colspan-1">
-        <dt><label for="spaceship_time">Time spent traveling</label></dt>
-        <dd><input type="number" id="spaceship_time" name="spaceship_time" step=".01" value="43" placeholder="e.g. 43"></dd>
-        <dt><label for="spaceship_time_unit">Unit of time</label></dt>
-        <dd><select id="spaceship_time_unit" name="spaceship_time_unit">
-          <option value="Hours">Hours</option>
-          <option value="Days" selected>Days</option>
-          <option value="Months">Months (simplified as 30 days)</option>
-          <option value="Years">Years</option>
-        </select></dd>
-        <dt><label for="spaceship_speed">% light speed</label></dt>
-        <dd><input type="number" id="spaceship_speed" name="spaceship_speed" min="0" max="100" step=".0000000001" value="37" placeholder="e.g. 37">
-        <label for="spaceship_speed">Percentage of the speed of light the spacecraft traveled.</label></dd>
+        <div>
+          <dt><label for="mission_profile">Mission profile</label></dt>
+          <dd><select id="mission_profile" name="mission_profile">
+            <option value="flip">Constant acceleration, flip and burn (arrive at rest)</option>
+            <option value="burn">Constant acceleration, burning the whole way</option>
+            <option value="velocity">Constant velocity</option>
+          </select></dd>
+        </div>
+        <div>
+          <dt><label for="spaceship_time">Time spent traveling</label></dt>
+          <dd><input type="number" id="spaceship_time" name="spaceship_time" step=".01" value="43" placeholder="e.g. 43">
+          <label for="spaceship_time">Time as measured aboard the spacecraft.</label></dd>
+        </div>
+        <div>
+          <dt><label for="spaceship_time_unit">Unit of time</label></dt>
+          <dd><select id="spaceship_time_unit" name="spaceship_time_unit">
+            <option value="Hours">Hours</option>
+            <option value="Days" selected>Days</option>
+            <option value="Months">Months (simplified as 30 days)</option>
+            <option value="Years">Years</option>
+          </select></dd>
+        </div>
+        <div class="velocityField">
+          <dt><label for="spaceship_speed">% light speed</label></dt>
+          <dd><input type="number" id="spaceship_speed" name="spaceship_speed" min="0" max="99.999999999" step=".0000000001" value="37" placeholder="e.g. 37">
+          <label for="spaceship_speed">Percentage of the speed of light the spacecraft traveled.</label></dd>
+        </div>
+        <div class="accelField">
+          <dt><label for="spaceship_accel">Acceleration (g)</label></dt>
+          <dd><input type="number" id="spaceship_accel" name="spaceship_accel" min="0" step=".01" value="1" placeholder="e.g. 1">
+          <label for="spaceship_accel">Thrust felt aboard the spacecraft, in Earth gravities. 1 g is the surface gravity of Earth.</label></dd>
+        </div>
       </dl>
       <menu>
         <li><button type="submit" name="submit">Calculate</button></li>
@@ -51,38 +74,103 @@
       window.semanticForms()
     })
     const form = document.querySelector('form')
+    const profileSelect = document.getElementById('mission_profile')
+
+    const C = 299792458 // speed of light in meters per second
+    const G = 9.80665 // standard gravity in meters per second squared
+    const KM_PER_AU = 149597870.7
+    const KM_PER_LY = 9460730472580.8
+
+    // days per unit, matching the labels in the unit dropdown
+    const daysPerUnit = {
+      Hours: 1 / 24,
+      Days: 1,
+      Months: 30,
+      Years: 365
+    }
+
+    // each field row is a div wrapping a dt/dd pair, so hiding the div hides the whole row
+    function toggleFields() {
+      const isVelocity = profileSelect.value === 'velocity'
+      document.querySelectorAll('.velocityField').forEach((el) => el.classList.toggle('hiddenField', !isVelocity))
+      document.querySelectorAll('.accelField').forEach((el) => el.classList.toggle('hiddenField', isVelocity))
+    }
+
+    function fmt(n) {
+      if (!isFinite(n)) return 'too large to display'
+      return n.toLocaleString('en-US')
+    }
+
+    profileSelect.addEventListener('change', toggleFields)
+    toggleFields()
+
     form.addEventListener('submit', function (e) {
       e.preventDefault()
-      const spaceShipTime = parseInt(document.getElementById('spaceship_time').value)
-      const percentLightSpeed = parseFloat(document.getElementById('spaceship_speed').value) / 100
-      const t = (spaceShipTime / Math.sqrt(1 - Math.pow(percentLightSpeed, 2))).toLocaleString('en-US')
-      const mps = ((299792458 * percentLightSpeed) / 1000) // speed of light is 299792458 meters per second
-      const mph = (mps * 60)
-      const mpd = (mph * 24)
-      const aupd = mpd / 149597870.7 // meters per day / number of km in an au
-      let days = spaceShipTime
-      let daysUnit = document.getElementById('spaceship_time_unit').value
-      switch (daysUnit) {
-        case 'Hours':
-          days /= 24
-          break
-        case 'Months':
-          days *= 30
-          break
-        case 'Years':
-          days *= 365
-          break
+      const profile = profileSelect.value
+      const shipTime = parseFloat(document.getElementById('spaceship_time').value)
+      const timeUnit = document.getElementById('spaceship_time_unit').value
+      const shipDays = shipTime * daysPerUnit[timeUnit]
+      const shipSeconds = shipDays * 86400
+      const output = document.querySelector('output')
+
+      if (!isFinite(shipTime) || shipTime <= 0) {
+        output.innerHTML = '<p><strong>Enter a travel time greater than zero.</strong></p>'
+        return
       }
-      document.querySelector('output').innerHTML = `
-        <p><strong>${document.getElementById('spaceship_time_unit').value} elapsed on Earth: ${t}</strong></p>
-        <p>Spacecraft speed:</p>
-        <ul>
-          <li>${mps.toLocaleString('en-US')} km/second</li>
-          <li>${mph.toLocaleString('en-US')} km/hour</li>
-          <li>${mpd.toLocaleString('en-US')} km/day</li>
-          <li>${aupd.toLocaleString('en-US')} AU/day (astronomical units per day)</li>
-        </ul>
-        <p>Distance traveled: ${(days * aupd).toLocaleString('en-US')} AU</p>`
+
+      if (profile === 'velocity') {
+        const beta = parseFloat(document.getElementById('spaceship_speed').value) / 100
+        if (!isFinite(beta) || beta < 0 || beta >= 1) {
+          output.innerHTML = '<p><strong>Enter a speed of at least 0% and less than 100% of light speed.</strong></p>'
+          return
+        }
+        const gamma = 1 / Math.sqrt(1 - Math.pow(beta, 2))
+        const kmPerSecond = (C * beta) / 1000
+        const kmPerDay = kmPerSecond * 86400
+        const auPerDay = kmPerDay / KM_PER_AU // km per day / number of km in an au
+        output.innerHTML = `
+          <p><strong>${timeUnit} elapsed on Earth: ${fmt(shipTime * gamma)}</strong></p>
+          <p>Time dilation factor (gamma): ${fmt(gamma)}</p>
+          <p>Spacecraft speed:</p>
+          <ul>
+            <li>${fmt(kmPerSecond)} km/second</li>
+            <li>${fmt(kmPerSecond * 3600)} km/hour</li>
+            <li>${fmt(kmPerDay)} km/day</li>
+            <li>${fmt(auPerDay)} AU/day (astronomical units per day)</li>
+          </ul>
+          <p>Distance traveled, measured from Earth: ${fmt(shipDays * gamma * auPerDay)} AU (${fmt(shipDays * gamma * auPerDay * KM_PER_AU / KM_PER_LY)} light years)</p>
+          <p>Distance traveled, measured aboard the spacecraft (length contracted): ${fmt(shipDays * auPerDay)} AU</p>`
+        return
+      }
+
+      // relativistic rocket: constant proper acceleration a felt aboard the ship. Over proper time tau, the Earth frame sees:
+      //
+      //   t = (c / a) * sinh(a * tau / c)
+      //   d = (c^2 / a) * (cosh(a * tau / c) - 1)
+      //   v / c = tanh(a * tau / c)
+      //
+      // a flip and burn is two mirrored halves of that burn, so run half the proper time and double the resulting time and distance
+      const gees = parseFloat(document.getElementById('spaceship_accel').value)
+      if (!isFinite(gees) || gees <= 0) {
+        output.innerHTML = '<p><strong>Enter an acceleration greater than zero.</strong></p>'
+        return
+      }
+      const a = gees * G
+      const legs = profile === 'flip' ? 2 : 1
+      const legSeconds = shipSeconds / legs
+      const x = (a * legSeconds) / C // dimensionless rapidity of one leg
+      const gamma = Math.cosh(x)
+      const beta = Math.tanh(x)
+      const earthSeconds = legs * (C / a) * Math.sinh(x)
+      const distanceKm = (legs * ((C * C) / a) * (Math.cosh(x) - 1)) / 1000
+      const earthUnits = earthSeconds / 86400 / daysPerUnit[timeUnit]
+      const peak = profile === 'flip' ? 'at turnaround' : 'at journey’s end'
+      output.innerHTML = `
+        <p><strong>${timeUnit} elapsed on Earth: ${fmt(earthUnits)}</strong></p>
+        <p>Time dilation factor (gamma) ${peak}: ${fmt(gamma)}</p>
+        <p>Top speed ${peak}: ${fmt(beta * 100)}% of light speed (${fmt((C * beta) / 1000)} km/second)</p>
+        <p>Distance traveled, measured from Earth: ${fmt(distanceKm / KM_PER_AU)} AU (${fmt(distanceKm / KM_PER_LY)} light years)</p>
+        ${profile === 'flip' ? '<p>The spacecraft arrives at rest relative to its starting frame.</p>' : '<p>The spacecraft is still under thrust on arrival and does not slow down.</p>'}`
     })
   </script>
   <p><a href="https://github.com/kethinov/time-dilation-calculator">Source code on GitHub</a></p>
